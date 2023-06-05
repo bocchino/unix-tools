@@ -1,0 +1,76 @@
+#!/usr/bin/awk -f
+
+# ----------------------------------------------------------------------
+# lst.awk: awk processing for lst 
+# ----------------------------------------------------------------------
+# Copyright (c) 2014 California Institute of Technology
+# ---------------------------------------------------------------------- 
+
+#include ../../lib/macros.awk
+#include ../../lib/lst-mark.awk
+
+# Report an error in preprocessing
+function report_error(msg) {
+  print "lst: " msg " at line " NR > "/dev/stderr"
+}
+
+# Start a new list
+function start_list(new_mode) {
+  parse_args()
+  if (++level > 1) print ".RS"
+  marks[level] = get_arg(1) 
+  par_indent[level] = get_arg(2)
+  if (get_arg(3) == "") mark_indent[level] = "\\n[MI]u"
+  else mark_indent[level] = get_arg(3)
+  mode[level] = new_mode
+}
+
+# Print an indented mark
+function print_mark(mark) {
+  if (mark == "") print ".IP"
+  else printf(".IP \"\\h'%s-\\w'%s'u'%s\" %s\n", mark_indent[level],
+       mark, mark, par_indent[level])
+}
+
+BEGIN {
+  level = 0
+  LIST = 0
+  OUTLINE = 1
+  print ".if \\n[MI]=0 .nr MI 4n"
+}
+
+$1 == ".ML" {
+  start_list(LIST)
+  next
+}
+
+$1 == ".OL" {
+  start_list(OUTLINE)
+  next
+}
+
+$1 == ".LI" {
+  if (level == 0) {
+    report_error("LI outside of list")
+    next
+  }
+  parse_args()
+  ++counter[level]
+  if (mode[level] == LIST && num_args > 0) mark = args[1]
+  else mark = marks[level]
+  if (mode[level] == OUTLINE)
+    print_mark(lst_mark(mark, counter[level])".")
+  else print_mark(mark)
+  next
+}
+
+$1 == ".LE" {
+  if (level == 0)
+    report_error("LE without LI")
+  else
+    counter[level--] = 0
+  if (level > 0) print ".RE"
+  next
+}
+
+{ print $0 }

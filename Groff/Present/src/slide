@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# slide(1): generate a presentation slide using groff_mp(7)
+# ----------------------------------------------------------------------
+# Copyright (C) 2014 California Institute of Technology
+# ---------------------------------------------------------------------- 
+
+usage() {
+  echo 'usage: slide -v' >&2
+  echo '       slide [-p] [-n page_number] [--] file' >&2
+  exit 1
+}
+
+animation() {
+  n=`awk -f $GROFF/present/count.awk < $1`
+  for i in `seq 1 $n`; do 
+    awk -f $GROFF/present/animate.awk $i $1
+    if test "$2" != ""; then
+      echo .SN' '$2
+    fi
+  done
+}
+
+printout() {
+  awk '$1 == ".AN" { next }
+       $1 == ".AE" { next }
+       { print $0 }' < $1
+  if test "$2" != ""; then
+    echo ".SN $2"
+  fi
+}
+
+p=0
+page_num=""
+while :; do
+  case $1 in
+    -v|--version)
+      echo 'slide version 1.0'
+      exit 0 ;;
+    -p)
+      p=1 ;;
+    -n)
+      page_num=$2
+      shift ;;
+    --)
+      shift
+      break ;;
+    -?*)
+      usage ;;
+    *)
+      break ;;
+  esac
+  shift
+done
+
+if test $# -ne 1; then usage; fi
+
+if ! test -e $1; then
+  echo 'slide: file '$1' does not exist' >&2
+  exit 1
+fi
+
+if test $p -eq 1; then
+  printout "$1" $page_num
+else
+  animation "$1" $page_num
+fi | \
+awk -f $GROFF/present/title.awk | \
+awk -f $GROFF/present/marks.awk | \
+awk -f $GROFF/present/captions.awk

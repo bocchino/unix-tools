@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install
+# ----------------------------------------------------------------------
+
+. ../dirs.sh
+
+mkdir -p $GROFF/site-tmac
+mkdir -p $MAN/man7
+
+install -v src/r.tmac $GROFF/site-tmac
+install -v man/groff_mr.7 $MAN/man7

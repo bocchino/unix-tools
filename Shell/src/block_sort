@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# Block Sort
+#
+# Sorts newline-delimited blocks by their first line.  
+# Reads the files given as command-line arguments (in order), or stdin.
+#
+# For example, if blocks.txt contains the lines
+# 
+#     Block 2
+#     This is block 2.
+#     
+#     Block 3
+#     This is block 3.
+#
+#     Block 1
+#     This is block 1.
+#
+# then 'block_sort blocks.txt' yields
+# 
+#     Block 1
+#     This is block 1.
+#     
+#     Block 2
+#     This is block 2.
+#
+#     Block 3
+#     This is block 3.
+#
+# Assumes the input file doesn't contain the \r character.
+# ----------------------------------------------------------------------
+
+LC_ALL='C'
+awk 'BEGIN { RS=""; FS="\n" }
+           { for (i = 1; i <= NF; ++i)  printf ("%s\r", $i)
+             print "" }' "$@" |
+sort |
+awk '{ gsub("\r", "\n", $0); print }'
+ 

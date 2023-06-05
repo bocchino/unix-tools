@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install
+# ----------------------------------------------------------------------
+
+. ../dirs.sh
+
+mkdir -p $BIN
+mkdir -p $MAN/man1
+
+install -v src/xref src/xref.awk $BIN
+install -v man/xref.1 $MAN/man1

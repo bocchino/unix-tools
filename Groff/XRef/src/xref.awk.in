@@ -1,0 +1,86 @@
+#!/usr/bin/awk -f
+
+# ----------------------------------------------------------------------
+# xref.awk.in: generate AWK script to process cross references
+# ----------------------------------------------------------------------
+# Copyright (C) 2014 California Institute of Technology
+# ----------------------------------------------------------------------
+
+#include ../../lib/lst-mark.awk
+
+function ol_mark (i)
+{
+  return lst_mark(ol_marks[i], ol_counters[i])
+}
+
+BEGIN {
+  nh_right = 1
+  ol_pos = 0
+  NONE = 0; OL = 1; ML = 2
+  lst_level = 0
+  lst_mode[lst_level] = NONE
+  counters["NH"] = 0
+  counters["LINE"] = 0
+}
+
+/^\.OL/ { 
+  lst_mode[++lst_level] = OL; 
+  ol_marks[++ol_pos] = $2 
+  ol_counters[ol_pos] = 0
+}
+
+/^\.ML/ { lst_mode[++lst_level] = ML }
+
+/^\.LI/ {
+  if (lst_mode[lst_level] == OL) {
+    ++ol_counters[ol_pos]
+  }
+}
+
+/^\.LE/ { 
+  if (lst_mode[lst_level--] == OL)
+    --ol_pos
+}
+
+# ms NH
+/^\.NH/ {
+  nh_current=$2
+  for (i = nh_right; i < nh_current; ++i)
+    nh_counts[i+1] = 0
+  ++nh_counts[nh_current]
+  nh_right = nh_current
+  counters["NH"] = ""
+  for (i = 1; i < nh_right; ++i)
+    counters["NH"] = counters["NH"] (sprintf ("%d.", nh_counts[i]))
+  counters["NH"] = counters["NH"] nh_counts[nh_right]
+}
+
+# define counter
+/^\.DC/ { counters[$2] = $3 }
+
+# increment counter
+/^\.IC/ { ++counters[$2] }
+
+# ms IP
+/^\.IP/ {
+  sub (".*'", "", $2)
+  sub ("\\.?\"", "", $2)
+  counters["IP"] = $2
+}
+
+# tags
+/^\.TG/ && $3=="" {
+  split ($2, fields, "!")
+  $3 = "#" fields[1]
+}
+/^\.TG/ {
+  counters["OL"] = ol_mark(1)
+  for (i = 2; i <= ol_pos; ++i)
+    counters["OL"] = sprintf ("%s(%s)", counters["OL"], ol_mark(i))
+  for (counter in counters)
+    gsub ("#" counter, counters[counter], $3)
+  if ($3 == "") $3 = 0
+  printf ("{ gsub (\"@%s\", \"%s\", $0) }\n", $2, $3)
+}
+
+!/^\./ { ++counters["LINE"] }

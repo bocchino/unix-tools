@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# dirs.default
+# ----------------------------------------------------------------------
+# To use this file:
+#
+# 1. Copy it to dirs.sh
+#
+# 2. Edit dirs.sh as necessary for your system
+# ----------------------------------------------------------------------
+
+# The location of executable commands
+export BIN=/usr/local/bin

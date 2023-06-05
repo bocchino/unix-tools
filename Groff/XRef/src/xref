@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# xref: process cross references for groff ms or groff man
+# ----------------------------------------------------------------------
+# Copyright (c) 2014 California Institute of Technology
+# ---------------------------------------------------------------------- 
+
+# process args
+while :; do
+  case $1 in
+    -v|--version)
+      echo 'xref version 1.0'
+      exit 0 ;;
+    --)
+      shift
+      break ;;
+    -?*)
+      echo 'usage: xref -v' >&2
+      echo '       xref [--] [files]' >&2
+      exit 1 ;;
+    *)
+      break ;;
+  esac
+  shift
+done
+
+for arg in "$@"; do
+  if test "$arg" != '-' && ! test -e "$arg"; then
+    echo 'xref: file '$arg' does not exist' >&2
+    exit 2
+  fi
+done
+
+tmp=`mktemp /tmp/xrefXXXXXX`
+
+# gather all the inputs
+cat "$@" > $tmp
+
+# generate awk an program to process cross references
+xref.awk < $tmp | sort -rd > $tmp.awk
+echo '!/^\.TG/ { print }
+!/^\./ && /@[0-9A-Za-z_]+![0-9A-Za-z_]/ {
+  print "xref: line " NR ": undefined tag" > "/dev/stderr/"
+  print $0 > "/dev/stderr"
+}' >> $tmp.awk
+
+# run the program and generate the output
+awk -f $tmp.awk < $tmp
+
+# clean up
+rm $tmp $tmp.awk

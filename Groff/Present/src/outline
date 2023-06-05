@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# outline: generate outline slides 
+# ----------------------------------------------------------------------
+# Part of the Present package
+# Copyright (c) 2014 California Institute of Technology
+# ----------------------------------------------------------------------
+
+if test $# != 1; then
+  echo 'usage: outline file[.t]' >&2
+  exit 1
+fi
+
+if ! test -f $1; then
+  echo 'outline: '$1' does not exist or is not a regular file' >&2
+  exit 2
+fi
+
+dir=`dirname $1`
+base=`basename $1 .t`
+
+# count L1 bullets
+n=`awk 'BEGIN { n = 0 }
+  $1 == ".L1" { ++n }
+  END { printf("%d\n", n) }' $1`
+
+# generate a slide for each one
+for i in `seq 1 $n`; do
+  awk 'BEGIN { i = 1 }
+    $1 == ".L1" {
+      print $1
+      if (i == '$i') print ".ft B"
+      ++i
+      next
+    }
+    { print $0 }' $1 > $dir/$base-$i.t
+done

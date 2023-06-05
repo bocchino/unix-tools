@@ -1,0 +1,156 @@
+#!/usr/bin/awk -f
+
+# ----------------------------------------------------------------------
+# lst.awk: HTML code generation for lst 
+# ----------------------------------------------------------------------
+# Copyright (c) 2014 California Institute of Technology
+# ---------------------------------------------------------------------- 
+
+#include ../../lib/macros.awk
+
+# Emit an HTML request
+function html(s) {
+  gsub("\"", "\"\"", s)
+  print ".HTML \"" s "\""
+}
+
+# Report an error in preprocessing
+function report_error(msg) {
+  print "lst: " msg " at line " NR > "/dev/stderr"
+}
+
+# Start a new list
+function start_list(new_mode) {
+  parse_args()
+  mark = get_arg(1)
+  marks[++level] = mark
+  mode[level] = new_mode
+  if (new_mode == UL)
+    html("<ul>")
+  else if (new_mode == OL)
+    html("<ol type=\"" mark "\">")
+  else if (level == 1) {
+    html("<table>")
+  }
+}
+
+function paragraph() {
+  html("<p style=\"margin-top: 1em\">")
+}
+
+function close_list_item() {
+  if (item_status == OPEN) {
+    html("</p>")
+    html("</li>")
+    item_status = CLOSED
+  }
+}
+
+function close_table_item () {
+  if (item_status == OPEN) {
+    html("</p>")
+    html("</td>")
+    html("</tr>")
+    item_status = CLOSED
+  }
+}
+
+function open_list_item() {
+  close_list_item()
+  html("<li>")
+  paragraph()
+  item_status = OPEN
+}
+
+function open_table_item(mark) {
+  close_table_item()
+  gsub("\"\"", "\"", mark)
+  mark = mark"\\ "
+  html("<tr>")
+  for (i = 1; i < level; ++i)
+    html("<td></td>")
+  html("<td align=\"right\">")
+  paragraph()
+  print mark
+  html("</p>")
+  html("</td>")
+  html("<td>")
+  paragraph()
+  item_status = OPEN
+}
+
+BEGIN {
+  level = 0
+  # List kinds
+  UL = 0
+  OL = 1
+  TABLE = 2
+  # Item status
+  CLOSED = 0
+  OPEN = 1
+}
+
+$1 == ".ML" {
+  if ($2 == "\\(bu")
+    start_list(UL)
+  else if ($2 == "\\[bu]")
+    start_list(UL)
+  else
+    start_list(TABLE)
+  next
+}
+
+$1 == ".OL" {
+  start_list(OL)
+  next
+}
+
+$1 == ".LI" {
+  if (level == 0) {
+    report_error("LI outside of list")
+    next
+  }
+  parse_args()
+  if (mode[level] == TABLE) {
+    mark = num_args > 0 ? args[1] : marks[level]
+    open_table_item(mark)
+  }
+  else {
+    open_list_item()
+  }
+  next
+}
+
+$1 == ".IP" {
+  if (level == 0)
+    print $0
+  else if (mode[level] != TABLE)
+    print ".LP"
+  else
+    open_table_item("")
+  next
+}
+
+$1 == ".LE" {
+  if (level == 0)
+    report_error("LE without LI")
+  else {
+    if (mode[level] == UL) {
+      close_list_item()
+      html("</ul>")
+    }
+    else if (mode[level] == OL) {
+      close_list_item()
+      html("</ol>")
+    }
+    else {
+      close_table_item()
+      if (level == 1)
+        html("</table>")
+    }
+    --level
+  }
+  next
+}
+
+{ print $0 }

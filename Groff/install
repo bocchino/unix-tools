@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install
+# ----------------------------------------------------------------------
+
+for dir in Lst Present Redline Resume XRef
+do
+  (cd $dir; ./install)
+done | tee installed

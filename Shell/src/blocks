@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# blocks
+# Convert delimited lines into newline-delimited blocks.
+# ----------------------------------------------------------------------
+# The default line delimiter is @!@!@. To use a different delimiter,
+# provide it as the command-line argument.
+#
+# Ordinarily you use this program together with lines (q.v.), and
+# the delimiters must be consistent.
+# ----------------------------------------------------------------------
+
+if test $# -gt 0
+then
+  delimiter=$1
+else
+  delimiter="@!@!@"
+fi
+
+awk '{ gsub("'$delimiter'", "\n", $0); print }'

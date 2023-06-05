@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Nothing to do, since we are not managing dependencies
+true

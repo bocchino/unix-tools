@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# redline
+# ----------------------------------------------------------------------
+
+usage() {
+  echo 'usage: redline -v' >&2 
+  echo '       redline [-d] [--] file.t < diff.txt' >&2
+  exit 1
+}
+
+sd=0
+while :; do
+  case $1 in
+    -v|--version)
+      echo 'redline version 1.0'
+      exit 0 ;;
+    -d)
+      sd=1 ;;
+    --)
+      shift
+      break ;;
+    -?*)
+      usage
+      exit 1 ;;
+    *)
+      break ;;
+  esac
+  shift
+done
+
+if test $# -ne 1; then usage; fi
+file=$1
+
+if ! test -e $file; then
+  echo 'redline: file '$file' does not exist' >&2
+  exit 2
+fi
+
+redline=`mktemp /tmp/redlineXXXXXX`
+make-redline > $redline.awk
+awk -v show_deletions=$sd -f $redline.awk < $file
+rm $redline.awk

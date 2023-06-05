@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# pdfcat: concatenate pdf files
+# ----------------------------------------------------------------------
+
+argc=$#
+if test "$argc" -lt 2
+then
+  echo 'usage: pdfcat infiles outfile' 1>&2
+  return 1
+fi
+
+unset ifiles
+
+while test "$#" -gt 1
+do
+  ifiles="$ifiles $1"
+  shift
+done
+
+ofile=$1
+
+gs -q -sPAPERSIZE=letter -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -sOutputFile=$ofile $ifiles

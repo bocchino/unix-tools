@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# dirs.default
+# ----------------------------------------------------------------------
+# To use this file:
+#
+# 1. Copy it to dirs.sh
+#
+# 2. Edit dirs.sh as necessary for your system
+# ----------------------------------------------------------------------
+
+# The location of executable commands
+export BIN=/usr/local/bin
+# The location of your groff installation
+export GROFF=/usr/local/share/groff
+# The location of the source files for your man pages
+export MAN=/usr/local/share/man

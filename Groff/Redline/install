@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install.do: install redline
+# ----------------------------------------------------------------------
+
+. ../dirs.sh
+
+mkdir -p $BIN
+mkdir -p $MAN/man1
+
+install -v src/redline src/make-redline $BIN
+install -v man/redline.1 $MAN/man1

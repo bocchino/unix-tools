@@ -1,0 +1,68 @@
+#!/usr/bin/awk -f
+
+# ----------------------------------------------------------------------
+# make-redline: generate awk script for redline
+# usage: 
+#   diff -u file1.t file2.t | make-redline > redline.awk
+#   awk [-v show_deletions=1] -f redline.awk < file2.t > file2.redline.t
+# ----------------------------------------------------------------------
+
+BEGIN {
+  line = 1
+  found_at = 0
+  in_text = 1
+  addition_color = "red"
+  deletion_color = "grey"
+  print "BEGIN {"
+  print "  in_text = 1"
+}
+/^@@/ {
+  # process @@ marker to get the line
+  found_at = 1
+  sub("\\+","",$3)
+  sub(",.*","",$3)
+  line = $3-1 
+}
+/^\+/ {
+  if (found_at)
+    printf("  additions[%s] = 1\n", line)
+}
+/^\-/ {
+  if (found_at) {
+    str = substr($0, 2)
+    # skip troff control lines
+    if (substr(str, 1, 1) == "." ||
+        substr(str, 1, 1) == "'")
+      next
+    # accumulate multi-line deletions into single strings
+    if (length(deletions[line]) > 0)
+      deletions[line] = deletions[line] "\\n" str
+    else
+      deletions[line] = str
+    next
+  }  
+}
+/.*/ { ++line }
+END {
+  for (line in deletions)
+    printf("  deletions[%s] = \"%s\"\n", line, deletions[line])
+  print  "}"
+  print  "/^\.TS/ { in_text = 0 }"
+  print  "/^\.PS/ { in_text = 0 }"
+  print  "/^\.EQ/ { in_text = 0 }"
+  print  "!in_text { print $0 }"
+  print  "in_text {"
+  print  "  if (NR in deletions && show_deletions) {"
+  printf("    print \".gcolor %s\"\n", deletion_color)
+  print  "    print deletions[NR]"
+  print  "    print \".gcolor black\""
+  print  "  }"
+  printf("  if (NR in additions) print \".gcolor %s\"\n",
+         addition_color)
+  print  "  print $0"
+  print  "  if (NR in additions) print \".gcolor black\""
+  print  "}"
+  print  "/^\.TE/ { in_text = 1 }"
+  print  "/^\.PE/ { in_text = 1 }"
+  print  "/^\.EN/ { in_text = 1 }"
+}

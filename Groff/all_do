@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# all_do 
+# ----------------------------------------------------------------------
+
+. ./replace_redo.sh
+
+# Put lst and xref in the path
+export PATH=$PATH:$PWD/Lst/src:$PWD/XRef/src
+redo all

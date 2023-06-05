@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install: install shell scripts
+# ----------------------------------------------------------------------
+
+. ./dirs.sh
+
+mkdir -p $BIN
+
+for file in `ls src`
+do
+  if test -x src/$file && ! echo $file | grep -q '~$' > /dev/null 2>&1
+  then
+    install -v src/$file $BIN
+  fi
+done | tee installed

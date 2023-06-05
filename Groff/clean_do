@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# clean
+# ----------------------------------------------------------------------
+
+. ./replace_redo.sh
+
+for dir in Lst Present Redline Resume XRef
+do
+  redo $dir/clean
+done
+
+for file in `find . -name '*~'`;
+do
+  rm $file
+done
+
+rm -f installed

@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install.do: install Present
+# ----------------------------------------------------------------------
+
+. ../dirs.sh
+
+mkdir -p $BIN
+mkdir -p $GROFF/present
+mkdir -p $GROFF/site-tmac
+mkdir -p $MAN/man1
+mkdir -p $MAN/man7
+
+for file in src/*.tmac; do
+  base=`basename $file`
+  cp $file $GROFF/site-tmac/$base
+done
+
+for file in src/*.awk
+do
+  base=`basename $file`
+  cp $file $GROFF/present/$base
+done
+
+for file in outline present slide; do
+  sed 's;\$GROFF;'$GROFF';g' < src/$file > $BIN/$file
+  chmod a+x $BIN/$file
+done
+
+install -v man/groff_mp.7 $MAN/man7
+#cp man/groff_mp.7 $MAN/man7/groff_mp.7
+install -v man/outline.1 man/present.1 man/slide.1 $MAN/man1
+#cp man/outline.1 $MAN/man1/outline.1
+#cp man/present.1 $MAN/man1/present.1
+#cp man/slide.1 $MAN/man1/slide.1

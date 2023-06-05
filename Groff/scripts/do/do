@@ -1,0 +1,193 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# do: Build everything once as specified in .do files
+# ----------------------------------------------------------------------
+# This implementation is sufficient for a first build, where
+# no build artifacts exist yet.
+# If you run the build and then modify source files, you will
+# need to delete the corresponding build artifacts before redoing.
+# The safest approach in this case is to clean everything
+# and rebuild.
+# ----------------------------------------------------------------------
+
+bold='\033[1m'
+no_color='\033[0m'
+red='\033[31m'
+green='\033[32m'
+
+# Echo green text
+echo_green()
+{
+  echo "$bold$green$1$no_color"
+}
+
+# Echo red text
+echo_red()
+{
+  echo "$bold$red$1$no_color"
+}
+
+# Canonicalize a directory path
+canonicalize_dir_path()
+{
+  mkdir -p $1
+  cd $1; echo $PWD
+}
+
+# Get the first segment of a full system path.
+# For example, get /a from /a/b/c.
+get_prefix()
+{
+  echo $1 | sed 's;^\(/[^/]*\).*;\1;'
+}
+
+# Delete the first segment of a path. For example, convert
+# /a/b/c to /b/c.
+delete_prefix()
+{
+  echo $1 | sed 's;^/[^/]*;;'
+}
+
+# Compute the relative path from $1 to $2.
+# For example, if $1=a/b/c and $2=/a/d, then compute
+# ../../d.
+relative_dir()
+{
+
+  a=$1
+  b=$2
+
+  a_prefix=`get_prefix $a`
+  b_prefix=`get_prefix $b`
+
+  while test -n "$a_prefix" && test -n "$b_prefix"
+  do
+    
+    if ! test "$a_prefix" = "$b_prefix"
+    then
+      break
+    fi
+
+    a=`delete_prefix $a`
+    b=`delete_prefix $b`
+    a_prefix=`get_prefix $a`
+    b_prefix=`get_prefix $b`
+
+  done
+
+  a=`echo $a | sed -e 's;/[^/]*;/..;g'`
+  c=.$a$b
+
+  if test "$c" = "."
+  then
+    echo ""
+  else
+    echo $c/ | sed 's;^\./;;'
+  fi
+
+}
+
+# Find the directory where the default.do file is defined.
+# It may be upwards of where we are.
+find_default_do_dir()
+{
+  if test -f $1
+  then
+    echo $PWD
+  elif test $PWD = "/"
+  then
+    echo ""
+  else
+    cd ..
+    find_default_do_dir $1
+  fi
+}
+
+# Run a do file
+run_do_file()
+{
+
+  do_dir=$4
+  do_file=$5
+  target=$6
+
+  prefix="`echo $DO_INDENT'do' | sed -e 's/+/ /g' -e 's/^  //'`"
+  echo_green "$prefix $target" 1>&2
+  (
+    cd $do_dir
+    sh $do_file $1 $2 $3 > redo-tmp
+    if test -s redo-tmp
+    then
+      mv redo-tmp $3
+    else
+      rm -f redo-tmp 
+    fi
+  )
+
+}
+
+# Redo one file
+redo_file()
+{
+
+  file=$1
+
+  dir=`dirname $file`
+  dir=`canonicalize_dir_path $dir`
+  base=`basename $file`
+  prefix=`echo $base | sed 's/\.[^.]*$//'`
+  if echo $base | grep -q '\.'
+  then
+    suffix=`echo $base | sed 's/^.*\.//'`
+  else
+    suffix=""
+  fi
+  rd=`relative_dir $PWD $dir`
+  target=$rd$base
+
+  if test -f "$dir/$base.do"
+  then
+    run_do_file $prefix $base $base $dir "$base.do" $target
+  else
+    do_file="default.$suffix.do"
+    do_dir=`cd $dir; find_default_do_dir $do_file`
+    set $suffix $rd$prefix $rd$base
+    if test -z "$do_dir"
+    then
+      do_file="default.do"
+      do_dir=`cd $dir; find_default_do_dir $do_file`
+      set $rd$base $rd$base $rd$base
+    fi
+    if test -n "$do_dir"
+    then
+      rd=`relative_dir $do_dir $dir`
+      run_do_file $1 $2 $3 $do_dir $do_file $target
+    else
+      echo_red "do: no rule to make $file" 1>&2
+      exit 1
+    fi
+  fi
+
+}
+
+# Use 'do all' as the default
+if test $# -eq 0
+then
+  set all
+fi
+
+# Process all files
+export DO_INDENT='++'$DO_INDENT
+for file in $@
+do
+
+  # Just skip files that already exist.
+  # The real redo rebuilds them if their dependencies have changed.
+  if ! test -f $file
+  then
+    redo_file $file
+  fi
+
+done
+export DO_INDENT=`echo $DO_INDENT | sed 's/^  //;'`

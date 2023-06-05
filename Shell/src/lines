@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# lines
+# Flatten newline-delimited blocks into single lines.
+# ----------------------------------------------------------------------
+# The default line delimiter is @!@!@. To use a different delimiter,
+# provide it as the command-line argument.
+# ----------------------------------------------------------------------
+
+tmp=`mktemp tmp.XXXX`
+
+if test $# -gt 0
+then
+  delimiter=$1
+else
+  delimiter="@!@!@"
+fi
+
+cat > $tmp
+
+if grep -q "$delimiter" $tmp
+then
+  echo 'blocks: warning: delimiter '$delimiter' appears in input'
+fi
+
+awk 'BEGIN { RS=""; FS="\n" }
+{ 
+  for (i = 1; i <= NF; ++i)  
+    printf ("%s%s", $i, "'$delimiter'")
+  print "" 
+}' < $tmp
+rm $tmp

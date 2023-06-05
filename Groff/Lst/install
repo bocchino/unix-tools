@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# install lst
+# ----------------------------------------------------------------------
+
+. ../dirs.sh
+
+mkdir -p $BIN
+mkdir -p $MAN/man1
+
+install -v src/lst src/lst.awk src/lst-html.awk $BIN
+install -v man/lst.1 $MAN/man1

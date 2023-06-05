@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------
+# xls_to_txt
+# Convert MS Excel tab-separated format to blocks
+# ---------------------------------------------------------------------- 
+# This program converts MS Excel spreadsheets into blocks that
+# that table can turn into HTML. Optionally, you can open the
+# HTML output of table in Excel. This produces a nicely-formatted
+# Excel worksheet.
+#
+# Together with table, this utility provides a simple way to mediate
+# between the worlds of Excel spreadsheets (where most people live) 
+# and UNIX text processing (where some of us like to live).
+#
+# To use this program, do the following:
+# 
+# 1. Save the Excel worksheet in tab-separated format (not CSV).
+#
+# 2. Feed the output of step 1 into the standard input of this
+#    program.
+# ----------------------------------------------------------------------
+
+tr '\r' '\n' | \
+sed -e 's/"""/@@@/g' -e 's/"//g' -e 's/@@@/"/g' | \
+awk '
+BEGIN {
+  FS = "\t"
+}
+
+{ 
+  for (i = 1; i <= NF; ++i) {
+    if ($i == "")
+      print "~"
+    else
+      print $i
+  }
+  print ""
+}
+'
